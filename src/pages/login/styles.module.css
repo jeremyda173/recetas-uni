@@ -1,0 +1,146 @@
+.wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #00b09b, #96c93d);
+}
+
+.card {
+  background: #fff;
+  padding: 2.5rem 2rem;
+  border-radius: 16px;
+  box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.title {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+  color: #333;
+  font-weight: bold;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.input {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.input:focus {
+  border-color: #00b09b;
+  box-shadow: 0 0 0 3px rgba(0, 176, 155, 0.2);
+}
+
+.button {
+  background: #00b09b;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+}
+
+.button:hover {
+  background: #029e88;
+  transform: translateY(-2px);
+}
+
+.message {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: red;
+}
+
+.welcome {
+  margin-top: 1rem;
+  color: #333;
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 2rem 1.5rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+}
+
+.registerText {
+  margin-top: 1.2rem;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+.registerLink {
+  color: #00b09b;
+  font-weight: bold;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.registerLink:hover {
+  color: #029e88;
+  text-decoration: underline;
+}
+
+.secondaryButton {
+  background: transparent;
+  color: #00b09b;
+  border: 2px solid #00b09b;
+  border-radius: 8px;
+  padding: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: all 0.3s ease;
+}
+
+.secondaryButton:hover {
+  background: #00b09b;
+  color: #fff;
+}
+
+.success {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #28a745;
+}
+
+.error {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #dc3545;
+}
