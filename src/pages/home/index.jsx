@@ -6,7 +6,7 @@ function Home({ user, onLogout }) {
       <nav className={styles.navbar}>
         <div className={styles.logo}>🍲 Recetas App</div>
         <ul className={styles.menu}>
-          <li><a href="#">Inicio</a></li>
+          <li><a href="/profile">Inicio</a></li>
           <li><a href="#">Recetas</a></li>
           <li><a href="#">Perfil</a></li>
         </ul>
