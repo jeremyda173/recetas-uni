@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "./styles.module.css";
 import Home from "../home";
+import Profile from "../profile";
 
 function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -9,6 +10,14 @@ function Auth() {
   const [password, setPassword] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [user, setUser] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,6 +41,7 @@ function Auth() {
       if (isLogin) {
         setUser(data.user);
         localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
       } else {
         setMensaje("Registro exitoso 🎉, ahora inicia sesión");
         setIsLogin(true);
@@ -43,12 +53,20 @@ function Auth() {
 
   const handleLogout = () => {
     setUser(null);
+    setShowProfile(false);
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setMensaje("Sesión cerrada 🚪");
+    setTimeout(() => {
+      setMensaje("");
+    }, 3000);
   };
 
   if (user) {
-    return <Home user={user} onLogout={handleLogout} />;
+    if (showProfile) {
+      return <Profile user={user} />;
+    }
+    return <Home user={user} onLogout={handleLogout} onGoProfile={() => setShowProfile(true)} />;
   }
 
   return (
