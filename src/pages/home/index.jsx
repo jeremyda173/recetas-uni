@@ -1,9 +1,11 @@
 import { useState } from "react";
 import styles from "./styles.module.css";
 import Profile from "../profile";
+import Recetas from "../recetas";
 
 function Home({ user, onLogout }) {
   const [showProfile, setShowProfile] = useState(false);
+  const [view, setView] = useState("inicio");
 
   return (
     <div className={styles.container}>
@@ -11,16 +13,17 @@ function Home({ user, onLogout }) {
         <div className={styles.logo}>🍲 Recetas App</div>
         <ul className={styles.menu}>
           <li>
-            <button className={styles.linkButton}>Inicio</button>
+            <button className={styles.linkButton} onClick={() => setView("inicio")}>
+              Inicio
+            </button>
           </li>
           <li>
-            <button className={styles.linkButton}>Recetas</button>
+            <button className={styles.linkButton} onClick={() => setView("recetas")}>
+              Recetas
+            </button>
           </li>
           <li>
-            <button
-              className={styles.linkButton}
-              onClick={() => setShowProfile(true)}
-            >
+            <button className={styles.linkButton} onClick={() => setShowProfile(true)}>
               Perfil
             </button>
           </li>
@@ -31,10 +34,15 @@ function Home({ user, onLogout }) {
       </nav>
 
       <main className={styles.main}>
-        <h1 className={styles.welcomeTitle}>Bienvenido {user.nombre} 👋</h1>
-        <p className={styles.welcomeText}>
-          Disfruta explorando y compartiendo recetas.
-        </p>
+        {view === "inicio" && (
+          <>
+            <h1 className={styles.welcomeTitle}>Bienvenido {user.nombre} 👋</h1>
+            <p className={styles.welcomeText}>
+              Disfruta explorando y compartiendo recetas.
+            </p>
+          </>
+        )}
+        {view === "recetas" && <Recetas user={user} />}
       </main>
 
       {showProfile && (
@@ -45,7 +53,7 @@ function Home({ user, onLogout }) {
               className={styles.closeButton}
               onClick={() => setShowProfile(false)}
             >
-              Cerrar
+              ✖ Cerrar
             </button>
           </div>
         </div>
