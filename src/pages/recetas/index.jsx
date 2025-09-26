@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SubirReceta from "../recetasSubir";
 import styles from "./styles.module.css";
 
 function Recetas({ user }) {
@@ -6,6 +7,7 @@ function Recetas({ user }) {
 
   return (
     <div className={styles.feedContainer}>
+      {/* Tabs */}
       <div className={styles.tabs}>
         <button
           className={`${styles.tab} ${
@@ -25,9 +27,12 @@ function Recetas({ user }) {
         </button>
       </div>
 
+      {/* Feed */}
       <div className={styles.posts}>
         {activeTab === "comunidad" && (
           <>
+            <SubirReceta user={user} />
+
             <div className={styles.post}>
               <h3>Arroz con pollo</h3>
               <p>Una receta clásica dominicana para compartir en familia 🍗🍚</p>
