@@ -74,6 +74,54 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// Actualizar perfil
+app.put("/usuarios/:id", async (req, res) => {
+  const { id } = req.params;
+  const { nombre, descripcion, foto } = req.body;
+
+  try {
+    await db.query(
+      "UPDATE usuarios SET nombre = ?, descripcion = ?, foto = ? WHERE id = ?",
+      [nombre, descripcion, foto, id]
+    );
+
+    const [rows] = await db.query(
+      "SELECT id, nombre, email, descripcion, foto FROM usuarios WHERE id = ?",
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    res.json({
+      message: "Perfil actualizado con éxito",
+      user: rows[0]
+    });
+  } catch (error) {
+    console.error("Error al actualizar:", error);
+    res.status(500).json({ error: "Error al actualizar perfil" });
+  }
+});
+
+// Obtener usuario por ID
+app.get("/usuarios/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await db.query(
+      "SELECT id, nombre, email, descripcion, foto FROM usuarios WHERE id = ?",
+      [id]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+    res.json(rows[0]);
+  } catch (error) {
+    console.error("Error en GET usuario:", error);
+    res.status(500).json({ error: "Error al obtener usuario" });
+  }
+});
+
 //Subir recetas
 app.post("/upload/recipes", async (req, res) => {
   const { titulo, descripcion, autor } = req.body;
