@@ -1,28 +1,53 @@
 import { useState } from "react";
 import styles from "./styles.module.css";
 
-function SubirReceta({ user }) {
+function SubirReceta({ user, token }) {
   const [showModal, setShowModal] = useState(false);
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
+  const [mensaje, setMensaje] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Nueva receta:", { titulo, descripcion, autor: user.nombre });
 
-    setTitulo("");
-    setDescripcion("");
-    setShowModal(false);
+    try {
+      const response = await fetch("http://localhost:3001/upload/recipes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          titulo,
+          descripcion,
+          autor: user.nombre,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMensaje(data.error || "Error al subir la receta");
+        return;
+      }
+
+      setMensaje(data.message);
+      setTitulo("");
+      setDescripcion("");
+      setShowModal(false);
+    } catch (error) {
+      console.error("Error:", error);
+      setMensaje("Error de conexión con el servidor");
+    }
   };
 
   return (
     <div>
-      <button
-        className={styles.subirButton}
-        onClick={() => setShowModal(true)}
-      >
+      <button className={styles.subirButton} onClick={() => setShowModal(true)}>
         ➕ Subir receta
       </button>
+
+      {mensaje && <p>{mensaje}</p>}
 
       {showModal && (
         <div className={styles.modalOverlay}>
