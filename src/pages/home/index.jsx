@@ -13,17 +13,26 @@ function Home({ user, onLogout }) {
         <div className={styles.logo}>🍲 Recetas App</div>
         <ul className={styles.menu}>
           <li>
-            <button className={styles.linkButton} onClick={() => setView("inicio")}>
+            <button
+              className={styles.linkButton}
+              onClick={() => setView("inicio")}
+            >
               Inicio
             </button>
           </li>
           <li>
-            <button className={styles.linkButton} onClick={() => setView("recetas")}>
+            <button
+              className={styles.linkButton}
+              onClick={() => setView("recetas")}
+            >
               Recetas
             </button>
           </li>
           <li>
-            <button className={styles.linkButton} onClick={() => setShowProfile(true)}>
+            <button
+              className={styles.linkButton}
+              onClick={() => setShowProfile(true)}
+            >
               Perfil
             </button>
           </li>
