@@ -1,32 +1,126 @@
 .profileCard {
+  background: #fff;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  max-width: 400px;
+  margin: auto;
+  text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
+  gap: 1rem;
 }
 
 .avatar {
-  width: 70px;
-  height: 70px;
-  background: #00b09b;
-  color: #fff;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
+  overflow: hidden;
+  background: #f2f2f2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: bold;
+  color: #555;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.editForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 1rem;
+}
+
+.input {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+  text-align: center;
+}
+
+.input:focus {
+  border-color: #3085d6;
+  box-shadow: 0 0 0 3px rgba(48, 133, 214, 0.2);
+}
+
+.buttons {
   display: flex;
   justify-content: center;
-  align-items: center;
-  font-size: 1.8rem;
-  font-weight: bold;
-  margin-bottom: 1rem;
+  gap: 1rem;
+  width: 100%;
+}
+
+.saveBtn,
+.cancelBtn,
+.editBtn {
+  flex: 1;
+  padding: 0.7rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.saveBtn {
+  background: #28a745;
+  color: #fff;
+}
+
+.saveBtn:hover {
+  background: #218838;
+  transform: scale(1.03);
+}
+
+.cancelBtn {
+  background: #dc3545;
+  color: #fff;
+}
+
+.cancelBtn:hover {
+  background: #c82333;
+  transform: scale(1.03);
+}
+
+.editBtn {
+  background: #007bff;
+  color: #fff;
+  width: 100%;
+}
+
+.editBtn:hover {
+  background: #0056b3;
+  transform: scale(1.03);
 }
 
 .name {
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   font-weight: bold;
-  color: #333;
-  margin-bottom: 0.3rem;
+  margin: 0;
 }
 
 .email {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: #666;
+  margin: 0;
+}
+
+.bio {
+  font-size: 1rem;
+  color: #444;
+  margin: 0.5rem 0;
 }
