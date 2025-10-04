@@ -420,7 +420,7 @@ function Recetas({ user }) {
             ) : (
               <div className={styles.myRecipesGrid}>
                 {misRecetas.map((receta) => {
-                  const stats = getRandomStats();
+                  const stats = recipeStats[receta.id] || { views: 0, comments: 0 };
                   return (
                     <article key={receta.id} className={styles.myRecipeCard}>
                       <div className={styles.cardHeader}>
