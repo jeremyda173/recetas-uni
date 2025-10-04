@@ -336,15 +336,15 @@ app.post("/comments", async (req, res) => {
       return res.status(401).json({ error: "Token requerido" });
     }
 
-    const payload = jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret");
+    const payload = jwt.verify(token, process.env.JWT_SECRET || "secret_default_para_desarrollo");
     
-    if (!payload.userId) {
+    if (!payload.id) {
       return res.status(401).json({ error: "Token inválido" });
     }
 
     const [result] = await db.query(
       "INSERT INTO comentarios (id_usuario, id_receta, comentario) VALUES (?, ?, ?)",
-      [payload.userId, recipeId, comentario]
+      [payload.id, recipeId, comentario]
     );
 
     const [newComment] = await db.query(`
@@ -373,9 +373,9 @@ app.delete("/comments/:id", async (req, res) => {
       return res.status(401).json({ error: "Token requerido" });
     }
 
-    const payload = jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret");
+    const payload = jwt.verify(token, process.env.JWT_SECRET || "secret_default_para_desarrollo");
     
-    if (!payload.userId) {
+    if (!payload.id) {
       return res.status(401).json({ error: "Token inválido" });
     }
 
