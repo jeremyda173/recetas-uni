@@ -12,7 +12,9 @@ import {
   Edit,
   Trash2,
   UserPlus,
-  Star
+  Star,
+  Menu,
+  X
 } from 'lucide-react';
 import styles from './AdminPanel.module.css';
 import { useRole } from './RoleManager';
@@ -24,6 +26,7 @@ function AdminPanel() {
   const [usuarios, setUsuarios] = useState([]);
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (view === 'recetas') {
@@ -144,6 +147,15 @@ function AdminPanel() {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleViewChange = (newView) => {
+    setView(newView);
+    setIsMobileMenuOpen(false);
   };
 
   const renderDashboard = () => {
@@ -314,47 +326,114 @@ function AdminPanel() {
           <div className={styles.logo}>🍲 Mikens</div>
           <div className={styles.adminBadge}>
             <Shield size={16} />
-            Administrador
+            <span className={styles.adminText}>Administrador</span>
           </div>
         </div>
         
+        {/* Desktop Menu */}
         <ul className={styles.menu}>
           <li>
             <button
               className={`${styles.linkButton} ${view === 'inicio' ? styles.active : ''}`}
-              onClick={() => setView('inicio')}
+              onClick={() => handleViewChange('inicio')}
             >
-              <HomeIcon size={18} /> Panel
+              <HomeIcon size={18} />
+              <span className={styles.menuText}>Panel</span>
             </button>
           </li>
           <li>
             <button
               className={`${styles.linkButton} ${view === 'recetas' ? styles.active : ''}`}
-              onClick={() => setView('recetas')}
+              onClick={() => handleViewChange('recetas')}
             >
-              <BookOpen size={18} /> Recetas
+              <BookOpen size={18} />
+              <span className={styles.menuText}>Recetas</span>
             </button>
           </li>
           <li>
             <button
               className={`${styles.linkButton} ${view === 'usuarios' ? styles.active : ''}`}
-              onClick={() => setView('usuarios')}
+              onClick={() => handleViewChange('usuarios')}
             >
-              <Users size={18} /> Usuarios
+              <Users size={18} />
+              <span className={styles.menuText}>Usuarios</span>
             </button>
           </li>
         </ul>
 
+        {/* Mobile Menu */}
+        <button 
+          className={styles.mobileMenuBtn}
+          onClick={toggleMobileMenu}
+          aria-label="Toggle menu"
+        >
+          {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+
         <div className={styles.userSection}>
           <div className={styles.adminInfo}>
             <Shield size={16} />
-            <span>{user?.nombre}</span>
+            <span className={styles.userName}>{user?.nombre}</span>
           </div>
-          <button onClick={logout} className={styles.logoutButton}>
+          <button onClick={logout} className={styles.logoutButton} title="Cerrar sesión">
             <LogOut size={18} />
+            <span className={styles.logoutText}>Salir</span>
           </button>
         </div>
       </nav>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div className={styles.mobileMenuOverlay} onClick={toggleMobileMenu}>
+          <div className={styles.mobileMenu} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.mobileMenuHeader}>
+              <h3>Menú de Administración</h3>
+              <button 
+                className={styles.mobileMenuClose}
+                onClick={toggleMobileMenu}
+                aria-label="Cerrar menú"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className={styles.mobileMenuItems}>
+              <button
+                className={`${styles.mobileMenuItem} ${view === 'inicio' ? styles.active : ''}`}
+                onClick={() => handleViewChange('inicio')}
+              >
+                <HomeIcon size={20} />
+                <span>Panel Principal</span>
+              </button>
+              <button
+                className={`${styles.mobileMenuItem} ${view === 'recetas' ? styles.active : ''}`}
+                onClick={() => handleViewChange('recetas')}
+              >
+                <BookOpen size={20} />
+                <span>Gestión de Recetas</span>
+              </button>
+              <button
+                className={`${styles.mobileMenuItem} ${view === 'usuarios' ? styles.active : ''}`}
+                onClick={() => handleViewChange('usuarios')}
+              >
+                <Users size={20} />
+                <span>Gestión de Usuarios</span>
+              </button>
+            </div>
+            
+            <div className={styles.mobileMenuFooter}>
+              <div className={styles.mobileUserInfo}>
+                <Shield size={16} />
+                <span>{user?.nombre}</span>
+              </div>
+              <button onClick={logout} className={styles.mobileLogoutBtn}>
+                <LogOut size={16} />
+                <span>Cerrar Sesión</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className={styles.main}>
         {mensaje && (
