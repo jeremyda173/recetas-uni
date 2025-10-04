@@ -1,113 +1,720 @@
-.subirButton {
-  background: #00b09b;
-  color: #fff;
-  padding: 10px 18px;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.3s;
+/* Subir Receta - Diseño Moderno y Profesional */
+.uploadContainer {
+  margin-bottom: 2rem;
+}
+
+/* Action Buttons Container */
+.actionButtons {
+  display: flex;
+  gap: 1rem;
   margin-bottom: 1rem;
 }
 
-.subirButton:hover {
-  background: #029e88;
+.selectBtn {
+  flex: 1;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
 }
 
+.selectBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4);
+}
+
+.uploadBtn {
+  width: 100%;
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white;
+  border: none;
+  padding: 1rem 1.5rem;
+  border-radius: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.uploadBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 35px rgba(59, 130, 246, 0.4);
+}
+
+.uploadBtn:active {
+  transform: translateY(0);
+}
+
+.uploadBtn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.uploadBtn:hover::before {
+  left: 100%;
+}
+
+/* Modal Styles */
 .modalOverlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
+  right: 0;
+  bottom: 0;
   background: rgba(0, 0, 0, 0.6);
   display: flex;
-  justify-content: center;
   align-items: center;
-  z-index: 2000;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+  padding: 1rem;
+  animation: fadeIn 0.3s ease-out;
 }
 
 .modal {
-  background: #fff;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-  width: 360px;
-  max-width: 90%;
-  animation: fadeIn 0.3s ease-in-out;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.form {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.8rem;
-  margin-top: 1rem;
+  background: white;
+  border-radius: 1.5rem;
   width: 100%;
+  max-width: 550px;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
 }
 
 @keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(-20px) scale(0.95);
+    transform: translateY(30px);
   }
-
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
+}
+
+/* Modal Header */
+.modalHeader {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white;
+  padding: 1.5rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+}
+
+.headerIcon {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .modalTitle {
-  font-size: 1.3rem;
-  margin-bottom: 1rem;
-  color: #333;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  flex: 1;
 }
 
-.input,
-.textarea {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 0.95rem;
+.closeBtn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  border-radius: 0.5rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.closeBtn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+/* Form Styles */
+.form {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.createForm {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* Create Form Label Styles */
+.createForm .label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1f2937;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.input {
+  padding: 0.875rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  background: white;
+  color: #1f2937;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+/* Create Form Specific Input Styles */
+.createForm .input {
+  padding: 1rem 1.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  font-size: 1.05rem;
+  background: #fafbfc;
+  color: #1f2937;
+  transition: all 0.3s ease;
+}
+
+.input:focus, .textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Create Form Focus States */
+.createForm .input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+  background: white;
+}
+
+.createForm .textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+  background: white;
+}
+
+.input::placeholder, .textarea::placeholder {
+  color: #9ca3af;
 }
 
 .textarea {
+  padding: 0.875rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  background: white;
+  color: #1f2937;
+  transition: all 0.2s ease;
+  font-family: inherit;
   resize: vertical;
-  min-height: 90px;
+  min-height: 120px;
 }
 
-.saveButton {
-  background: #00b09b;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 10px;
-  font-weight: bold;
+/* Create Form Textarea */
+.createForm .textarea {
+  padding: 1rem 1.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  font-size: 1.05rem;
+  background: #fafbfc;
+  color: #1f2937;
+  transition: all 0.3s ease;
+  resize: vertical;
+  min-height: 140px;
+  line-height: 1.6;
+}
+
+/* Visibility Section */
+.visibilitySection {
+  padding: 1.5rem;
+  background: rgba(59, 130, 246, 0.05);
+  border-radius: 1rem;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+/* Create Form Visibility Section */
+.createForm .visibilitySection {
+  padding: 2rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(30, 64, 175, 0.05) 100%);
+  border-radius: 1.25rem;
+  border: 2px solid rgba(59, 130, 246, 0.15);
+}
+
+.visibilityLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   cursor: pointer;
-  transition: background 0.3s;
 }
 
-.saveButton:hover {
-  background: #029e88;
+.labelText {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
 }
 
-.closeButton {
+.toggleContainer {
+  display: flex;
+  justify-content: center;
+}
+
+.toggleBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 2rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Create Form Toggle */
+.createForm .toggleBtn {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.toggleBtn.active {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Create Form Active Toggle */
+.createForm .toggleBtn.active {
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  transform: scale(1.02);
+}
+
+.toggleBtn.inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.toggleBtn:hover.active {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+}
+
+.toggleBtn:hover.inactive {
+  background: #e5e7eb;
+  transform: translateY(-1px);
+}
+
+.toggleSlider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+}
+
+.toggleBtn.inactive .toggleSlider {
+  background: rgba(107, 114, 128, 0.1);
+}
+
+.toggleLabel {
+  font-weight: 500;
+}
+
+.visibilityNote {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Message Styles */
+.message {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-radius: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 0.5rem 0;
+}
+
+.message.success {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.message.error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Form Actions */
+.formActions {
+  display: flex;
+  gap: 1rem;
   margin-top: 1rem;
-  padding: 8px 14px;
-  background: #dc3545;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.3s;
 }
 
-.closeButton:hover {
-  background: #b52a38;
+.cancelBtn {
+  flex: 1;
+  background: transparent;
+  color: #6b7280;
+  border: 1px solid #d1d5db;
+  padding: 1rem 1.5rem;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelBtn:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.submitBtn {
+  flex: 2;
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white;
+  border: none;
+  padding: 1rem 1.5rem;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.submitBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modal {
+    margin: 1rem;
+    max-width: none;
+  }
+  
+  .form {
+    padding: 1.5rem;
+  }
+  
+  .formActions {
+    flex-direction: column;
+  }
+  
+  .toggleContainer {
+    justify-content: stretch;
+  }
+  
+  .toggleBtn {
+    justify-content: center;
+    flex: 1;
+  }
+}
+
+/* Selection Mode Styles */
+.selectForm {
+  padding: 2rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.selectionInstructions {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.selectionInstructions p {
+  margin: 0;
+  color: #1e40af;
+  font-weight: 500;
+}
+
+/* Select Dropdown */
+.select {
+  padding: 0.875rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  background: white;
+  color: #1f2937;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  padding-right: 3rem;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.25em 1.25em;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.select option {
+  padding: 0.5rem;
+}
+
+/* Recipe Preview */
+.selectedRecipePreview {
+  margin: 1.5rem 0;
+}
+
+.previewTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.previewTitle::before {
+  content: '👁️';
+  font-size: 0.875rem;
+}
+
+.previewCard {
+  background: rgba(59, 130, 246, 0.05);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+}
+
+.previewHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.previewHeader svg {
+  color: #3b82f6;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.previewInfo {
+  flex: 1;
+}
+
+.previewRecipeTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 0.25rem 0;
+}
+
+.previewTime {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.previewDescription {
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.previewDescription p {
+  color: #4b5563;
+  line-height: 1.5;
+  margin: 0;
+  font-size: 0.9rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.publicationNotice {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 0.5rem;
+  color: #059669;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.publicationNotice svg {
+  flex-shrink: 0;
+}
+
+
+/* No Recipes State */
+.noRecipes {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #6b7280;
+}
+
+.noRecipes h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 1rem 0 0.5rem;
+}
+
+.noRecipes p {
+  margin: 0 0 2rem;
+  color: #9ca3af;
+}
+
+.createAgainBtn {
+  background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  color: white;
+  border: none;
+  padding: 0.875rem 1.5rem;
+  border-radius: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.createAgainBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+}
+
+@media (max-width: 480px) {
+  .modalHeader {
+    padding: 1.25rem 1.5rem;
+  }
+  
+  .headerIcon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .modalTitle {
+    font-size: 1.125rem;
+  }
+  
+  .form {
+    padding: 1.25rem;
+    gap: 1.25rem;
+  }
+  
+  .toggleBtn {
+    padding: 0.75rem 1rem;
+  }
+  
+  .actionButtons {
+    flex-direction: column;
+  }
+  
+  .selectForm {
+    padding: 1.25rem;
+  }
+  
+  .recipeHeader {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+  }
 }
