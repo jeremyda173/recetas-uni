@@ -43,7 +43,7 @@ function Home({ user, onLogout }) {
   return (
     <div className={styles.container}>
       <nav className={styles.navbar}>
-        <div className={styles.logo}>🍲 Recetas App</div>
+        <div className={styles.logo}>🍲 Mikens</div>
         <ul className={styles.menu}>
           <li>
             <button
