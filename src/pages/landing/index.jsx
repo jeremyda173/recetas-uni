@@ -18,13 +18,33 @@ import { useRole } from "../../components/RoleManager";
 function Landing({ recetasPublicas }) {
   const { openLogin, openRegister } = useRole();
   const [featuredRecipes, setFeaturedRecipes] = useState([]);
+  const [stats, setStats] = useState({ recetas: 0, usuarios: 0 });
 
   useEffect(() => {
-    // Tomar las primeras 6 recetas como destacadas para el landing
     if (recetasPublicas && recetasPublicas.length > 0) {
       setFeaturedRecipes(recetasPublicas.slice(0, 6));
     }
   }, [recetasPublicas]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const recetasResponse = await fetch('http://localhost:3001/recipes');
+        const recetasData = await recetasResponse.json();
+        const recetasCount = Array.isArray(recetasData) ? recetasData.length : 0;
+
+        const usuariosResponse = await fetch('http://localhost:3001/usuarios');
+        const usuariosData = await usuariosResponse.json();
+        const usuariosCount = Array.isArray(usuariosData) ? usuariosData.length : 0;
+
+        setStats({ recetas: recetasCount, usuarios: usuariosCount });
+      } catch {
+        setStats({ recetas: 3, usuarios: 1 });
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   return (
     <div className={styles.landing}>
@@ -94,12 +114,12 @@ function Landing({ recetasPublicas }) {
         <div className={styles.statsContainer}>
           <div className={styles.stat}>
             <Star className={styles.statIcon} />
-            <div className={styles.statNumber}>500+</div>
+            <div className={styles.statNumber}>{stats.recetas}</div>
             <div className={styles.statLabel}>Recetas</div>
           </div>
           <div className={styles.stat}>
             <Users className={styles.statIcon} />
-            <div className={styles.statNumber}>1,200+</div>
+            <div className={styles.statNumber}>{stats.usuarios}</div>
             <div className={styles.statLabel}>Usuarios</div>
           </div>
         </div>
