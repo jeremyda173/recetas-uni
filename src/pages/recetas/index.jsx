@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { 
   Clock, 
   Users, 
-  Heart, 
-  Share2, 
+  MessageCircle, 
   Edit3, 
   Trash2, 
   Eye, 
@@ -29,6 +28,10 @@ function Recetas({ user }) {
   const [formTitulo, setFormTitulo] = useState("");
   const [formDescripcion, setFormDescripcion] = useState("");
   const [formTiempo, setFormTiempo] = useState("");
+  const [showComments, setShowComments] = useState(false);
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState("");
 
   const fetchRecetas = async () => {
     try {
@@ -159,8 +162,75 @@ function Recetas({ user }) {
   const getRandomStats = () => ({
     views: Math.floor(Math.random() * 500) + 50,
     likes: Math.floor(Math.random() * 100) + 10,
-    shares: Math.floor(Math.random() * 30) + 5
+    shares: Math.floor(Math.random() * 30) + 5,
+    comments: Math.floor(Math.random() * 50) + 3
   });
+
+  const fetchComments = async (recipeId) => {
+    try {
+      const response = await fetch(`http://localhost:3001/comments/${recipeId}`);
+      const data = await response.json();
+      if (response.ok) {
+        setComments(data);
+      } else {
+        setComments([]);
+      }
+    } catch {
+      setComments([]);
+    }
+  };
+
+  const handleShowComments = (recipe) => {
+    setSelectedRecipe(recipe);
+    setShowComments(true);
+    fetchComments(recipe.id);
+  };
+
+  const handleSubmitComment = async (e) => {
+    e.preventDefault();
+    if (!newComment.trim() || !selectedRecipe) return;
+
+    try {
+      const response = await fetch('http://localhost:3001/comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          recipeId: selectedRecipe.id,
+          comentario: newComment.trim()
+        })
+      });
+
+      if (response.ok) {
+        setNewComment("");
+        const data = await response.json();
+        setComments(prev => [...prev, data]);
+      }
+    } catch {
+      // Handle error silently
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!confirm('¿Eliminar este comentario?')) return;
+
+    try {
+      const response = await fetch(`http://localhost:3001/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (response.ok) {
+        setComments(prev => prev.filter(c => c.id !== commentId));
+      }
+    } catch {
+      // Handle error silently
+    }
+  };
 
   return (
     <div className={styles.recipesContainer}>
@@ -218,9 +288,15 @@ function Recetas({ user }) {
                         </div>
                         <div className={styles.recipeInfo}>
                           <h3 className={styles.recipeTitle}>{receta.titulo}</h3>
-                          <div className={styles.author}>
-                            <User size={14} />
-                            <span>{receta.autor}</span>
+                          <div className={styles.authorContainer}>
+                            <div className={styles.author}>
+                              <User size={14} />
+                              <span>{receta.autor}</span>
+                            </div>
+                            <span className={styles.date}>
+                              <Calendar size={12} />
+                              {formatDate(new Date())}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -235,19 +311,11 @@ function Recetas({ user }) {
                             <Eye size={14} />
                             <span>{stats.views}</span>
                           </div>
-                          <div className={styles.stat}>
-                            <Heart size={14} />
-                            <span>{stats.likes}</span>
-                          </div>
-                          <div className={styles.stat}>
-                            <Share2 size={14} />
-                            <span>{stats.shares}</span>
+                          <div className={styles.stat} onClick={() => handleShowComments(receta)}>
+                            <MessageCircle size={14} />
+                            <span>{stats.comments}</span>
                           </div>
                         </div>
-                        <span className={styles.date}>
-                          <Calendar size={12} />
-                          {formatDate(new Date())}
-                        </span>
                       </div>
                     </article>
                   );
@@ -331,8 +399,8 @@ function Recetas({ user }) {
                             {stats.views} vistas
                           </div>
                           <div className={styles.stat}>
-                            <Heart size={14} />
-                            {stats.likes} me gusta
+                            <Users size={14} />
+                            {stats.comments} comentarios
                           </div>
                         </div>
                       </div>
@@ -485,6 +553,101 @@ function Recetas({ user }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Comentarios */}
+      {showComments && selectedRecipe && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.commentsModal}>
+            <div className={styles.commentsHeader}>
+              <h3 className={styles.commentsTitle}>
+                <MessageCircle size={20} />
+                Comentarios: {selectedRecipe.titulo}
+              </h3>
+              <button
+                className={styles.closeBtn}
+                onClick={() => {
+                  setShowComments(false);
+                  setSelectedRecipe(null);
+                  setComments([]);
+                  setNewComment("");
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.commentsContent}>
+              {/* Lista de comentarios */}
+              <div className={styles.commentsList}>
+                {comments.length === 0 ? (
+                  <div className={styles.noComments}>
+                    <MessageCircle size={48} />
+                    <h4>No hay comentarios aún</h4>
+                    <p>¡Sé el primero en comentar!</p>
+                  </div>
+                ) : (
+                  comments.map((comment) => (
+                    <div key={comment.id} className={styles.commentItem}>
+                      <div className={styles.commentHeader}>
+                        <div className={styles.commentAuthor}>
+                          <User size={16} />
+                          <span>{comment.nombre_usuario || user?.nombre}</span>
+                        </div>
+                        <span className={styles.commentDate}>
+                          {formatDate(comment.creado_en)}
+                        </span>
+                        {(comment.id_usuario === user?.id || user?.email === 'admin@mikens.com') && (
+                          <button
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className={styles.deleteCommentBtn}
+                            title="Eliminar comentario"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                      <p className={styles.commentText}>{comment.comentario}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Formulario de nuevo comentario */}
+              <form onSubmit={handleSubmitComment} className={styles.commentForm}>
+                <div className={styles.commentInputGroup}>
+                  <MessageCircle size={18} />
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Escribe tu comentario..."
+                    className={styles.commentTextarea}
+                    rows={3}
+                    required
+                  />
+                </div>
+                <div className={styles.commentActions}>
+                  <button type="submit" className={styles.submitCommentBtn}>
+                    <MessageCircle size={16} />
+                    Comentar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowComments(false);
+                      setSelectedRecipe(null);
+                      setComments([]);
+                      setNewComment("");
+                    }}
+                    className={styles.cancelCommentBtn}
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

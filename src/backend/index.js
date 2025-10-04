@@ -307,6 +307,87 @@ app.delete("/usuarios/:id", async (req, res) => {
   }
 });
 
+// Endpoints de comentarios
+
+// GET /comments/:recipeId - Obtener comentarios de una receta
+app.get("/comments/:recipeId", async (req, res) => {
+  try {
+    const { recipeId } = req.params;
+    const [rows] = await db.query(`
+      SELECT c.*, u.nombre as nombre_usuario 
+      FROM comentarios c 
+      JOIN usuarios u ON c.id_usuario = u.id 
+      WHERE c.id_receta = ? 
+      ORDER BY c.creado_en DESC
+    `, [recipeId]);
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: "Error al obtener comentarios" });
+  }
+});
+
+// POST /comments - Crear nuevo comentario
+app.post("/comments", async (req, res) => {
+  try {
+    const { recipeId, comentario } = req.body;
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ error: "Token requerido" });
+    }
+
+    const payload = jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret");
+    
+    if (!payload.userId) {
+      return res.status(401).json({ error: "Token inválido" });
+    }
+
+    const [result] = await db.query(
+      "INSERT INTO comentarios (id_usuario, id_receta, comentario) VALUES (?, ?, ?)",
+      [payload.userId, recipeId, comentario]
+    );
+
+    const [newComment] = await db.query(`
+      SELECT c.*, u.nombre as nombre_usuario 
+      FROM comentarios c 
+      JOIN usuarios u ON c.id_usuario = u.id 
+      WHERE c.id = ?
+    `, [result.insertId]);
+
+    res.json(newComment[0]);
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: "Token inválido" });
+    }
+    res.status(500).json({ error: "Error al crear comentario" });
+  }
+});
+
+// DELETE /comments/:id - Eliminar comentario
+app.delete("/comments/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ error: "Token requerido" });
+    }
+
+    const payload = jwt.verify(token, process.env.JWT_SECRET || "your_jwt_secret");
+    
+    if (!payload.userId) {
+      return res.status(401).json({ error: "Token inválido" });
+    }
+
+    await db.query("DELETE FROM comentarios WHERE id = ?", [id]);
+    res.json({ message: "Comentario eliminado exitosamente" });
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: "Token inválido" });
+    }
+    res.status(500).json({ error: "Error al eliminar comentario" });
+  }
+});
 
 // Servidor
 app.listen(3001, () => {
