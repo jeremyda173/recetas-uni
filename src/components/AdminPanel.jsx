@@ -24,6 +24,7 @@ function AdminPanel() {
   const [view, setView] = useState('inicio');
   const [recetas, setRecetas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
+  const [recetasReportadas, setRecetasReportadas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -33,6 +34,8 @@ function AdminPanel() {
       fetchRecetas();
     } else if (view === 'usuarios') {
       fetchUsuarios();
+    } else if (view === 'reportes') {
+      fetchRecetasReportadas();
     }
   }, [view]);
 
@@ -67,6 +70,36 @@ function AdminPanel() {
       }
     } catch {
       setMensaje('Error de conexión con el servidor');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRecetasReportadas = async () => {
+    setLoading(true);
+    setMensaje('');
+    try {
+      const token = localStorage.getItem('token');
+      console.log('Token para admin:', token ? 'presente' : 'ausente');
+      
+      const response = await fetch('http://localhost:3001/reports/admin', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      
+      console.log('Respuesta del servidor:', { status: response.status, data });
+      
+      if (response.ok) {
+        setRecetasReportadas(data);
+        setMensaje('');
+      } else {
+        setMensaje(data.error || 'Error al cargar recetas reportadas');
+      }
+    } catch (error) {
+      console.error('Error en fetchRecetasReportadas:', error);
+      setMensaje('Error de conexión con el servidor: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -149,6 +182,31 @@ function AdminPanel() {
     });
   };
 
+  const gestionarRecetaReportada = async (recetaId, accion) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:3001/reports/admin/${recetaId}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ accion })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMensaje(data.message);
+        fetchRecetasReportadas(); // Recargar la lista
+      } else {
+        const data = await response.json();
+        setMensaje(data.error || 'Error al gestionar la receta');
+      }
+    } catch {
+      setMensaje('Error de conexión con el servidor');
+    }
+  };
+
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
@@ -159,6 +217,85 @@ function AdminPanel() {
   };
 
   const renderDashboard = () => {
+    if (view === 'reportes') {
+      return (
+        <div className={styles.adminSection}>
+          <h2 className={styles.sectionTitle}>Recetas Reportadas</h2>
+          <p className={styles.sectionSubtitle}>Revisa y gestiona recetas que han sido reportadas por la comunidad</p>
+          
+          {loading ? (
+            <div className={styles.loading}>Cargando recetas reportadas...</div>
+          ) : recetasReportadas.length === 0 ? (
+            <div className={styles.emptyState}>
+              <AlertTriangle size={48} className={styles.emptyIcon} />
+              <h3>No hay recetas reportadas</h3>
+              <p>¡Excelente! No hay contenido reportado que requiera revisión.</p>
+            </div>
+          ) : (
+            <div className={styles.reportedRecipesGrid}>
+              {recetasReportadas.map((receta) => (
+                <div key={receta.id} className={styles.reportedRecipeCard}>
+                  <div className={styles.reportedRecipeHeader}>
+                    <h3>{receta.titulo}</h3>
+                    <div className={styles.reportInfo}>
+                      <span className={styles.reportCount}>
+                        <AlertTriangle size={14} />
+                        {receta.report_count} reportes
+                      </span>
+                      <span className={`${styles.status} ${receta.estado === 'oculto' ? styles.hidden : styles.reported}`}>
+                        {receta.estado === 'oculto' ? 'Oculta' : 'Reportada'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <p className={styles.reportedRecipeDescription}>
+                    {receta.descripcion.length <= 150 
+                      ? receta.descripcion 
+                      : `${receta.descripcion.substring(0, 150)}...`
+                    }
+                  </p>
+                  
+                  <div className={styles.reportedRecipeInfo}>
+                    <span>Por: {receta.autor}</span>
+                  </div>
+                  
+                  <div className={styles.reportDetails}>
+                    <div className={styles.reportMotivos}>
+                      <strong>Motivos reportados:</strong>
+                      <p>{receta.motivos || 'No especificado'}</p>
+                    </div>
+                    <div className={styles.reportUsuarios}>
+                      <strong>Reportado por:</strong>
+                      <p>{receta.usuarios_reportaron || 'Usuarios anónimos'}</p>
+                    </div>
+                  </div>
+                  
+                  <div className={styles.reportedRecipeActions}>
+                    <button
+                      onClick={() => gestionarRecetaReportada(receta.id, 'activar')}
+                      className={`${styles.actionBtn} ${styles.approveBtn}`}
+                      title="Activar receta y limpiar reportes"
+                    >
+                      <CheckCircle size={16} />
+                      Activar
+                    </button>
+                    <button
+                      onClick={() => gestionarRecetaReportada(receta.id, 'desactivar')}
+                      className={`${styles.actionBtn} ${styles.rejectBtn}`}
+                      title="Desactivar receta permanentemente"
+                    >
+                      <AlertTriangle size={16} />
+                      Desactivar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     if (view === 'recetas') {
       return (
         <div className={styles.adminSection}>
@@ -307,6 +444,12 @@ function AdminPanel() {
             <AlertTriangle size={28} className={styles.icon} />
             <h3>Reportes y Moderación</h3>
             <p>Revisa contenido reportado y actividades sospechosas.</p>
+            <button 
+              className={styles.cardBtn}
+              onClick={() => setView('reportes')}
+            >
+              Ver reportes
+            </button>
           </div>
 
           <div className={styles.card}>
@@ -357,6 +500,15 @@ function AdminPanel() {
             >
               <Users size={18} />
               <span className={styles.menuText}>Usuarios</span>
+            </button>
+          </li>
+          <li>
+            <button
+              className={`${styles.linkButton} ${view === 'reportes' ? styles.active : ''}`}
+              onClick={() => handleViewChange('reportes')}
+            >
+              <AlertTriangle size={18} />
+              <span className={styles.menuText}>Reportes</span>
             </button>
           </li>
         </ul>
@@ -418,6 +570,13 @@ function AdminPanel() {
               >
                 <Users size={20} />
                 <span>Gestión de Usuarios</span>
+              </button>
+              <button
+                className={`${styles.mobileMenuItem} ${view === 'reportes' ? styles.active : ''}`}
+                onClick={() => handleViewChange('reportes')}
+              >
+                <AlertTriangle size={20} />
+                <span>Recetas Reportadas</span>
               </button>
             </div>
             

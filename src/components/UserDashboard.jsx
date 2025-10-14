@@ -48,12 +48,6 @@ function UserDashboard() {
           </div>
           
           <div className={styles.card}>
-            <Star size={28} className={styles.icon} />
-            <h3>Tus favoritas</h3>
-            <p>Guarda recetas para verlas más tarde cuando quieras.</p>
-          </div>
-          
-          <div className={styles.card}>
             <Plus size={28} className={styles.icon} />
             <h3>Comparte tu sazón</h3>
             <p>Sube tus propias recetas y deja que otros disfruten tu estilo.</p>

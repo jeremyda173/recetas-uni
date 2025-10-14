@@ -19,6 +19,22 @@ const db = await mysql.createConnection({
   database: process.env.DB_NAME || 'recetas_db',
 });
 
+// Middleware para verificar token (para rutas protegidas)
+const verifyToken = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: "Token no proporcionado" });
+    }
+    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_default_para_desarrollo');
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({ error: "Token inválido" });
+  }
+};
+
 // Registro
 app.post("/register", async (req, res) => {
   const { nombre, email, password } = req.body;
@@ -148,9 +164,15 @@ app.post("/upload/recipes", async (req, res) => {
   }
 });
 
-app.post("/recipes", async (req, res) => {
+app.post("/recipes", verifyToken, async (req, res) => {
   const { titulo, descripcion, autor, tiempo, comunidad } = req.body;
   try {
+    // Obtener información del usuario
+    const [userRows] = await db.query("SELECT * FROM usuarios WHERE email = ?", [req.user.email]);
+    if (userRows.length === 0) {
+      return res.status(403).json({ error: "Usuario no encontrado" });
+    }
+    
     if (!titulo || !descripcion || !autor) {
       return res
         .status(400)
@@ -175,15 +197,31 @@ app.post("/recipes", async (req, res) => {
 });
 
 //actualizar recetas
-app.patch("/recipes/:id", async (req, res) => {
+app.patch("/recipes/:id", verifyToken, async (req, res) => {
   const { id } = req.params;
   const { titulo, descripcion, comunidad, tiempo } = req.body;
 
   try {
+    // Obtener información del usuario
+    const [userRows] = await db.query("SELECT * FROM usuarios WHERE email = ?", [req.user.email]);
+    if (userRows.length === 0) {
+      return res.status(403).json({ error: "Usuario no encontrado" });
+    }
+    
+    const user = userRows[0];
+    const isAdmin = user.email === 'admin@mikens.com';
+    
     // primero vemos si existe
     const [rows] = await db.query("SELECT * FROM recetas WHERE id = ?", [id]);
     if (rows.length === 0) {
       return res.status(404).json({ error: "Receta no encontrada" });
+    }
+    
+    const recipe = rows[0];
+    
+    // Verificar permisos: admin puede editar cualquier receta, usuario solo las suyas
+    if (!isAdmin && recipe.autor !== user.nombre) {
+      return res.status(403).json({ error: "No autorizado para editar esta receta" });
     }
     const fields = [];
     const values = [];
@@ -225,9 +263,44 @@ app.patch("/recipes/:id", async (req, res) => {
 //mostrar recetas
 app.get("/recipes", async (req, res) => {
   try {
-    const [rows] = await db.query("SELECT * FROM recetas");
-    res.json(rows);
+    // Verificar si la tabla reportes existe
+    try {
+      const [tables] = await db.query("SHOW TABLES LIKE 'reportes'");
+      
+      if (tables.length > 0) {
+        console.log("Tabla reportes existe, obteniendo recetas con conteo...");
+        const [rows] = await db.query(`
+          SELECT r.*, 
+                 (SELECT COUNT(*) FROM reportes WHERE id_receta = r.id) as report_count
+          FROM recetas r
+          ORDER BY r.id DESC
+        `);
+        console.log("Recetas obtenidas con conteo de reportes:", rows.length);
+        console.log("Primera receta:", JSON.stringify(rows[0], null, 2));
+        res.json(rows);
+      } else {
+        console.log("Tabla reportes NO existe, usando consulta simple...");
+        const [rows] = await db.query(`
+          SELECT *, 0 as report_count
+          FROM recetas 
+          ORDER BY id DESC
+        `);
+        console.log("Recetas obtenidas sin conteo de reportes:", rows.length);
+        res.json(rows);
+      }
+    } catch (dbError) {
+      console.error("Error en consulta:", dbError.message);
+      // Fallback a consulta simple
+      const [rows] = await db.query(`
+        SELECT *, 0 as report_count
+        FROM recetas 
+        ORDER BY id DESC
+      `);
+      console.log("Usando fallback, recetas obtenidas:", rows.length);
+      res.json(rows);
+    }
   } catch (error) {
+    console.error("Error al obtener recetas:", error);
     res.status(500).json({ error: "Error al obtener las recetas" });
   }
 });
@@ -244,41 +317,37 @@ app.get("/recipes/public", async (req, res) => {
   }
 });
 
-// Middleware para verificar token (para rutas protegidas)
-const verifyToken = async (req, res, next) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ error: "Token no proporcionado" });
-    }
-    
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret_default_para_desarrollo');
-    req.user = decoded;
-    next();
-  } catch (error) {
-    res.status(401).json({ error: "Token inválido" });
-  }
-};
-
 // Eliminar receta (solo para admin)
 app.delete("/recipes/:id", verifyToken, async (req, res) => {
   const { id } = req.params;
   
   try {
-    // Verificar si el usuario es admin
-    const [rows] = await db.query("SELECT * FROM usuarios WHERE email = ?", [req.user.email]);
-    if (rows.length === 0 || rows[0].email !== 'admin@mikens.com') {
-      return res.status(403).json({ error: "No autorizado" });
+    // Obtener información del usuario
+    const [userRows] = await db.query("SELECT * FROM usuarios WHERE email = ?", [req.user.email]);
+    if (userRows.length === 0) {
+      return res.status(403).json({ error: "Usuario no encontrado" });
     }
     
+    const user = userRows[0];
+    const isAdmin = user.email === 'admin@mikens.com';
+    
+    // Obtener información de la receta
     const [exists] = await db.query("SELECT * FROM recetas WHERE id = ?", [id]);
     if (exists.length === 0) {
       return res.status(404).json({ error: "Receta no encontrada" });
     }
     
+    const recipe = exists[0];
+    
+    // Verificar permisos: admin puede eliminar cualquier receta, usuario solo las suyas
+    if (!isAdmin && recipe.autor !== user.nombre) {
+      return res.status(403).json({ error: "No autorizado para eliminar esta receta" });
+    }
+    
     await db.query("DELETE FROM recetas WHERE id = ?", [id]);
     res.json({ message: "Receta eliminada exitosamente" });
   } catch (error) {
+    console.error("Error al eliminar receta:", error);
     res.status(500).json({ error: "Error al eliminar receta" });
   }
 });
@@ -386,6 +455,335 @@ app.delete("/comments/:id", async (req, res) => {
       return res.status(401).json({ error: "Token inválido" });
     }
     res.status(500).json({ error: "Error al eliminar comentario" });
+  }
+});
+
+
+// Endpoint temporal para obtener todos los reportes
+app.get("/all-reports", async (req, res) => {
+  try {
+    const [rows] = await db.query("SELECT * FROM reportes");
+    res.json(rows);
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+
+// Endpoint temporal para probar consulta de recetas reportadas
+app.get("/test-reported-recipes", async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT r.*, 
+             COUNT(rep.id) as report_count,
+             GROUP_CONCAT(DISTINCT rep.motivo) as motivos,
+             GROUP_CONCAT(DISTINCT u.nombre) as usuarios_reportaron
+      FROM recetas r
+      LEFT JOIN reportes rep ON r.id = rep.id_receta
+      LEFT JOIN usuarios u ON rep.id_usuario = u.id
+      GROUP BY r.id
+      HAVING r.estado = 'oculto' OR COUNT(rep.id) >= 3
+      ORDER BY r.id DESC
+    `);
+    
+    res.json({
+      total: rows.length,
+      recetas: rows
+    });
+  } catch (error) {
+    res.json({ 
+      error: error.message,
+      code: error.code 
+    });
+  }
+});
+
+// Endpoint temporal para ocultar recetas con 3+ reportes
+app.post("/hide-reported-recipes", async (req, res) => {
+  try {
+    // Obtener recetas con 3 o más reportes
+    const [recipes] = await db.query(`
+      SELECT r.id, r.titulo, COUNT(rep.id) as report_count
+      FROM recetas r
+      JOIN reportes rep ON r.id = rep.id_receta
+      GROUP BY r.id, r.titulo
+      HAVING report_count >= 3
+    `);
+    
+    console.log("Recetas con 3+ reportes encontradas:", recipes);
+    
+    // Asegurar que la columna estado existe
+    try {
+      await db.query("ALTER TABLE recetas ADD COLUMN estado VARCHAR(20) DEFAULT 'activo'");
+    } catch (e) {
+      // Columna ya existe
+    }
+    
+    // Ocultar cada receta
+    for (const recipe of recipes) {
+      await db.query("UPDATE recetas SET estado = 'oculto' WHERE id = ?", [recipe.id]);
+      console.log(`Receta ${recipe.id} (${recipe.titulo}) ocultada`);
+    }
+    
+    res.json({ 
+      message: `${recipes.length} recetas ocultadas`,
+      recipes: recipes 
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    res.json({ error: error.message });
+  }
+});
+
+// Endpoint temporal para probar consulta
+app.get("/test-query", async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT r.*, 
+             (SELECT COUNT(*) FROM reportes WHERE id_receta = r.id) as report_count
+      FROM recetas r
+      ORDER BY r.id DESC
+    `);
+    res.json(rows);
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+
+// Endpoint temporal para verificar reportes
+app.get("/debug/reportes", async (req, res) => {
+  try {
+    // Verificar si la tabla existe
+    const [tables] = await db.query("SHOW TABLES LIKE 'reportes'");
+    console.log("Tabla reportes existe:", tables.length > 0);
+    
+    if (tables.length > 0) {
+      // Mostrar estructura de la tabla
+      const [structure] = await db.query("DESCRIBE reportes");
+      console.log("Estructura de tabla reportes:", structure);
+      
+      // Mostrar todos los reportes
+      const [reportes] = await db.query("SELECT * FROM reportes");
+      console.log("Reportes en la tabla:", reportes);
+      
+      // Mostrar recetas con conteo de reportes
+      const [recetasConReportes] = await db.query(`
+        SELECT r.id, r.titulo, r.autor, COUNT(rep.id) as report_count
+        FROM recetas r
+        LEFT JOIN reportes rep ON r.id = rep.id_receta
+        GROUP BY r.id, r.titulo, r.autor
+        ORDER BY r.id DESC
+      `);
+      console.log("Recetas con conteo de reportes:", recetasConReportes);
+      
+      res.json({
+        tablaExiste: true,
+        estructura: structure,
+        reportes: reportes,
+        recetasConReportes: recetasConReportes
+      });
+    } else {
+      res.json({
+        tablaExiste: false,
+        mensaje: "La tabla 'reportes' no existe. Ejecuta el script SQL para crearla."
+      });
+    }
+  } catch (error) {
+    console.error("Error en debug de reportes:", error);
+    res.json({
+      error: error.message,
+      code: error.code
+    });
+  }
+});
+
+// POST /reports - Reportar una receta
+app.post("/reports", async (req, res) => {
+  try {
+    const { recipeId, motivo } = req.body;
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    console.log("Reporte recibido:", { recipeId, motivo, hasToken: !!token, token: token?.substring(0, 20) + "..." });
+    
+    if (!token) {
+      console.log("No token provided");
+      return res.status(401).json({ error: "Token requerido" });
+    }
+
+    console.log("Verificando token...");
+    const payload = jwt.verify(token, process.env.JWT_SECRET || "secret_default_para_desarrollo");
+    console.log("Token payload:", payload);
+    
+    if (!payload.id) {
+      console.log("Token sin ID de usuario");
+      return res.status(401).json({ error: "Token inválido" });
+    }
+
+    // Verificar si la tabla reportes existe
+    try {
+      // Verificar si el usuario ya reportó esta receta
+      const [existingReport] = await db.query(
+        "SELECT id FROM reportes WHERE id_usuario = ? AND id_receta = ?",
+        [payload.id, recipeId]
+      );
+
+      if (existingReport.length > 0) {
+        return res.status(400).json({ error: "Ya has reportado esta receta" });
+      }
+
+      // Crear el reporte
+      await db.query(
+        "INSERT INTO reportes (id_usuario, id_receta, motivo) VALUES (?, ?, ?)",
+        [payload.id, recipeId, motivo || 'Contenido inapropiado']
+      );
+
+      // Contar reportes para esta receta
+      const [reportCount] = await db.query(
+        "SELECT COUNT(*) as count FROM reportes WHERE id_receta = ?",
+        [recipeId]
+      );
+
+      // Si hay 3 o más reportes, ocultar la receta
+      if (reportCount[0].count >= 3) {
+        console.log(`Ocultando receta ${recipeId} por tener ${reportCount[0].count} reportes`);
+        try {
+          await db.query(
+            "UPDATE recetas SET estado = 'oculto' WHERE id = ?",
+            [recipeId]
+          );
+          console.log(`Receta ${recipeId} ocultada exitosamente`);
+        } catch (updateError) {
+          console.error("Error al ocultar receta:", updateError);
+          // Si falla por columna no existe, crear la columna
+          if (updateError.code === 'ER_BAD_FIELD_ERROR') {
+            console.log("Columna estado no existe, creándola...");
+            await db.query("ALTER TABLE recetas ADD COLUMN estado VARCHAR(20) DEFAULT 'activo'");
+            await db.query("UPDATE recetas SET estado = 'oculto' WHERE id = ?", [recipeId]);
+          }
+        }
+      }
+
+      res.json({ 
+        message: "Receta reportada exitosamente",
+        reportCount: reportCount[0].count
+      });
+    } catch (dbError) {
+      console.error("Error de base de datos:", dbError);
+      if (dbError.code === 'ER_NO_SUCH_TABLE') {
+        // Simular éxito si la tabla no existe
+        res.json({ 
+          message: "Receta reportada exitosamente (tabla no configurada)",
+          reportCount: 1
+        });
+      } else {
+        throw dbError;
+      }
+    }
+  } catch (error) {
+    console.error("Error completo en reporte:", {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: "Token inválido" });
+    }
+    res.status(500).json({ 
+      error: "Error al reportar receta", 
+      details: error.message 
+    });
+  }
+});
+
+// GET /reports/admin - Obtener todas las recetas reportadas (solo admin)
+app.get("/reports/admin", async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ error: "Token requerido" });
+    }
+
+    const payload = jwt.verify(token, process.env.JWT_SECRET || "secret_default_para_desarrollo");
+    
+    // Verificar si es admin
+    const [userRows] = await db.query("SELECT * FROM usuarios WHERE email = ?", [payload.email]);
+    if (userRows.length === 0 || userRows[0].email !== 'admin@mikens.com') {
+      return res.status(403).json({ error: "No autorizado" });
+    }
+
+    // Obtener recetas reportadas
+    const [rows] = await db.query(`
+      SELECT r.*, 
+             COUNT(rep.id) as report_count,
+             GROUP_CONCAT(DISTINCT rep.motivo) as motivos,
+             GROUP_CONCAT(DISTINCT u.nombre) as usuarios_reportaron
+      FROM recetas r
+      LEFT JOIN reportes rep ON r.id = rep.id_receta
+      LEFT JOIN usuarios u ON rep.id_usuario = u.id
+      GROUP BY r.id
+      HAVING r.estado = 'oculto' OR COUNT(rep.id) >= 3
+      ORDER BY r.id DESC
+    `);
+
+    console.log(`Recetas reportadas encontradas: ${rows.length}`);
+    res.json(rows);
+  } catch (error) {
+    console.error("Error en /reports/admin:", error);
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: "Token inválido" });
+    }
+    res.status(500).json({ 
+      error: "Error al obtener recetas reportadas", 
+      details: error.message 
+    });
+  }
+});
+
+// PATCH /reports/admin/:recipeId - Activar/desactivar receta (solo admin)
+app.patch("/reports/admin/:recipeId", async (req, res) => {
+  try {
+    const { recipeId } = req.params;
+    const { accion } = req.body; // 'activar' o 'desactivar'
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ error: "Token requerido" });
+    }
+
+    const payload = jwt.verify(token, process.env.JWT_SECRET || "secret_default_para_desarrollo");
+    
+    // Verificar si es admin
+    const [userRows] = await db.query("SELECT * FROM usuarios WHERE email = ?", [payload.email]);
+    if (userRows.length === 0 || userRows[0].email !== 'admin@mikens.com') {
+      return res.status(403).json({ error: "No autorizado" });
+    }
+
+    let estado;
+    if (accion === 'activar') {
+      estado = 'activo';
+      // Limpiar reportes cuando se reactiva
+      await db.query("DELETE FROM reportes WHERE id_receta = ?", [recipeId]);
+    } else if (accion === 'desactivar') {
+      estado = 'desactivado';
+    } else {
+      return res.status(400).json({ error: "Acción inválida" });
+    }
+
+    await db.query(
+      "UPDATE recetas SET estado = ? WHERE id = ?",
+      [estado, recipeId]
+    );
+
+    res.json({ 
+      message: `Receta ${accion === 'activar' ? 'activada' : 'desactivada'} exitosamente`,
+      estado: estado
+    });
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: "Token inválido" });
+    }
+    res.status(500).json({ error: "Error al actualizar estado de receta" });
   }
 });
 

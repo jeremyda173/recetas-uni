@@ -95,11 +95,6 @@ function Home({ user, onLogout }) {
                 <p>Descubre una gran variedad de platos de todo el mundo.</p>
               </div>
               <div className={styles.card}>
-                <Star size={28} className={styles.icon} />
-                <h3>Tus favoritas</h3>
-                <p>Guarda recetas para verlas más tarde cuando quieras.</p>
-              </div>
-              <div className={styles.card}>
                 <Share2 size={28} className={styles.icon} />
                 <h3>Comparte tu sazón</h3>
                 <p>Sube tus propias recetas y deja que otros disfruten tu estilo.</p>

@@ -12,7 +12,9 @@ import {
   User,
   Calendar,
   Tag,
-  Bookmark
+  Bookmark,
+  Flag,
+  AlertTriangle
 } from "lucide-react";
 import SubirReceta from "../recetasSubir";
 import styles from "./styles.module.css";
@@ -33,6 +35,27 @@ function Recetas({ user }) {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
   const [recipeStats, setRecipeStats] = useState({});
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportRecipe, setReportRecipe] = useState(null);
+  const [reportMotivo, setReportMotivo] = useState("");
+  const [notification, setNotification] = useState(null);
+  const [reportesData, setReportesData] = useState([]);
+
+  const fetchReportes = async () => {
+    try {
+      const response = await fetch("http://localhost:3001/all-reports");
+      if (response.ok) {
+        const data = await response.json();
+        setReportesData(data);
+      }
+    } catch (error) {
+      console.log("Error al obtener reportes:", error);
+    }
+  };
+
+  const getReportCount = (recipeId) => {
+    return reportesData.filter(reporte => reporte.id_receta === recipeId).length;
+  };
 
   const fetchRecetas = async () => {
     try {
@@ -58,14 +81,19 @@ function Recetas({ user }) {
       }, {});
       
       setRecipeStats(statsMap);
+      
+      // Verificar si hay recetas del usuario con reportes
+      checkReportedRecipes(comunidad);
     } catch {
       // Handle error silently
     }
   };
 
   useEffect(() => {
-    fetchRecetas();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (user) {
+      fetchRecetas();
+      fetchReportes();
+    }
   }, [user]);
 
   const handleEdit = (receta) => {
@@ -80,36 +108,59 @@ function Recetas({ user }) {
 
   const handleTogglePublica = async (receta) => {
     try {
+      // Verificar si la receta tiene 3 o más reportes
+      const reportCount = getReportCount(receta.id);
+      
+      // Si tiene 3+ reportes y se quiere hacer pública, no permitir
+      if (reportCount >= 3 && !receta.comunidad) {
+        showNotification(
+          `No puedes publicar esta receta porque tiene ${reportCount} reportes. Contacta a un administrador.`,
+          'error'
+        );
+        return;
+      }
+
+      const token = localStorage.getItem('token');
       const response = await fetch(
         `http://localhost:3001/recipes/${receta.id}`,
         {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({ comunidad: !receta.comunidad }),
         }
       );
       if (!response.ok) throw new Error("Error al actualizar receta");
       await fetchRecetas();
+      showNotification(
+        `Receta ${!receta.comunidad ? "publicada" : "ocultada"} exitosamente`,
+        'success'
+      );
     } catch {
-      // Handle error silently
+      showNotification('Error al cambiar visibilidad de la receta', 'error');
     }
   };
 
   const handleDelete = async (recetaId) => {
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(
         `http://localhost:3001/recipes/${recetaId}`,
         {
           method: "DELETE",
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         }
       );
       if (!response.ok) throw new Error("Error al eliminar receta");
       await fetchRecetas();
       setShowDeleteConfirm(null);
+      showNotification('Receta eliminada exitosamente', 'success');
     } catch {
-      // Handle error silently
+      showNotification('Error al eliminar la receta', 'error');
     }
   };
 
@@ -117,10 +168,12 @@ function Recetas({ user }) {
     e.preventDefault();
     try {
       if (formMode === "create") {
+        const token = localStorage.getItem('token');
         const response = await fetch("http://localhost:3001/recipes", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
             titulo: formTitulo,
@@ -134,10 +187,12 @@ function Recetas({ user }) {
         if (!response.ok) throw new Error("Error al crear receta");
         
       } else if (formMode === "edit") {
+        const token = localStorage.getItem('token');
         const response = await fetch(`http://localhost:3001/recipes/${editReceta.id}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
             titulo: formTitulo,
@@ -289,6 +344,81 @@ function Recetas({ user }) {
     }
   };
 
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification(null);
+    }, 4000);
+  };
+
+  const checkReportedRecipes = (recetas) => {
+    recetas.forEach(receta => {
+      const reportCount = getReportCount(receta.id);
+      if (receta.autor?.toLowerCase() === user?.nombre?.toLowerCase() && reportCount > 0) {
+        showNotification(
+          `Tu receta "${receta.titulo}" tiene ${reportCount} reporte(s)`,
+          'warning'
+        );
+      }
+    });
+  };
+
+  const handleReportRecipe = (recipe) => {
+    setReportRecipe(recipe);
+    setShowReportModal(true);
+  };
+
+  const handleSubmitReport = async (e) => {
+    e.preventDefault();
+    if (!reportRecipe || !reportMotivo.trim()) return;
+
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await fetch('http://localhost:3001/reports', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          recipeId: reportRecipe.id,
+          motivo: reportMotivo.trim()
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        showNotification(
+          `Receta reportada exitosamente. Reportes: ${data.reportCount}/3`,
+          'success'
+        );
+        
+        // Actualizar la lista de reportes
+        await fetchReportes();
+        
+        // Si llegó a 3 reportes, actualizar la lista
+        if (data.reportCount >= 3) {
+          await fetchRecetas();
+          showNotification(
+            'La receta ha sido ocultada por recibir 3 reportes',
+            'warning'
+          );
+        }
+      } else {
+        const error = await response.json();
+        showNotification(error.error || 'Error al reportar receta', 'error');
+      }
+    } catch {
+      showNotification('Error de conexión al reportar receta', 'error');
+    }
+
+    // Cerrar modal
+    setShowReportModal(false);
+    setReportRecipe(null);
+    setReportMotivo("");
+  };
+
   return (
     <div className={styles.recipesContainer}>
       {/* Header con tabs */}
@@ -372,6 +502,20 @@ function Recetas({ user }) {
                             <MessageCircle size={14} />
                             <span>{stats.comments}</span>
                           </div>
+                          {receta.autor?.toLowerCase() === user?.nombre?.toLowerCase() ? (
+                            <div className={`${styles.stat} ${styles.reportCount}`} title="Reportes recibidos">
+                              <Flag size={14} />
+                              <span>{getReportCount(receta.id)}</span>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleReportRecipe(receta)}
+                              className={`${styles.stat} ${styles.reportBtn}`}
+                              title="Reportar receta"
+                            >
+                              <Flag size={14} />
+                            </button>
+                          )}
                         </div>
                       </div>
                     </article>
@@ -459,6 +603,10 @@ function Recetas({ user }) {
                             <Users size={14} />
                             {stats.comments} comentarios
                           </div>
+                          <div className={`${styles.stat} ${styles.reportCount}`}>
+                            <Flag size={14} />
+                            {getReportCount(receta.id)} reportes
+                          </div>
                         </div>
                       </div>
 
@@ -472,8 +620,13 @@ function Recetas({ user }) {
                         </button>
                         <button
                           onClick={() => handleTogglePublica(receta)}
-                          className={`${styles.actionBtn} ${styles.toggleBtn}`}
-                          title={receta.comunidad ? "Ocultar" : "Publicar"}
+                          className={`${styles.actionBtn} ${styles.toggleBtn} ${getReportCount(receta.id) >= 3 && !receta.comunidad ? styles.disabledBtn : ''}`}
+                          title={
+                            getReportCount(receta.id) >= 3 && !receta.comunidad 
+                              ? `No se puede publicar (${getReportCount(receta.id)} reportes)`
+                              : receta.comunidad ? "Ocultar" : "Publicar"
+                          }
+                          disabled={getReportCount(receta.id) >= 3 && !receta.comunidad}
                         >
                           {receta.comunidad ? <EyeOff size={16} /> : <Eye size={16} />}
                         </button>
@@ -706,6 +859,92 @@ function Recetas({ user }) {
               </form>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Modal de Reporte */}
+      {showReportModal && reportRecipe && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.reportModal}>
+            <div className={styles.reportHeader}>
+              <h3 className={styles.reportTitle}>
+                <AlertTriangle size={20} />
+                Reportar Receta
+              </h3>
+              <button
+                className={styles.closeBtn}
+                onClick={() => {
+                  setShowReportModal(false);
+                  setReportRecipe(null);
+                  setReportMotivo("");
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.reportContent}>
+              <div className={styles.reportRecipeInfo}>
+                <h4>{reportRecipe.titulo}</h4>
+                <p>Por: {reportRecipe.autor}</p>
+              </div>
+
+              <form onSubmit={handleSubmitReport} className={styles.reportForm}>
+                <div className={styles.inputGroup}>
+                  <label className={styles.label}>Motivo del reporte</label>
+                  <select
+                    value={reportMotivo}
+                    onChange={(e) => setReportMotivo(e.target.value)}
+                    className={styles.input}
+                    required
+                  >
+                    <option value="">Selecciona un motivo</option>
+                    <option value="Contenido inapropiado">Contenido inapropiado</option>
+                    <option value="Información falsa">Información falsa</option>
+                    <option value="Spam o publicidad">Spam o publicidad</option>
+                    <option value="Contenido ofensivo">Contenido ofensivo</option>
+                    <option value="Violación de derechos de autor">Violación de derechos de autor</option>
+                    <option value="Otro">Otro</option>
+                  </select>
+                </div>
+
+                <div className={styles.reportNote}>
+                  <AlertTriangle size={16} />
+                  <p>
+                    Esta receta será revisada por nuestros administradores. 
+                    Si recibe 3 reportes, será ocultada temporalmente hasta su revisión.
+                  </p>
+                </div>
+
+                <div className={styles.formActions}>
+                  <button type="submit" className={styles.reportSubmitBtn}>
+                    <Flag size={16} />
+                    Reportar Receta
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notificación */}
+      {notification && (
+        <div className={`${styles.notification} ${styles[notification.type]}`}>
+          <div className={styles.notificationContent}>
+            <div className={styles.notificationIcon}>
+              {notification.type === 'success' && '✓'}
+              {notification.type === 'error' && '✕'}
+              {notification.type === 'warning' && '⚠'}
+            </div>
+            <span className={styles.notificationMessage}>{notification.message}</span>
+          </div>
+          <button
+            className={styles.notificationClose}
+            onClick={() => setNotification(null)}
+          >
+            ✕
+          </button>
         </div>
       )}
     </div>
